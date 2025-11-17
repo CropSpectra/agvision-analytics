@@ -10,14 +10,12 @@ st.set_page_config(page_title="AgVision Analytics", layout="wide")
 st.title("🌸 AgVision Analytics Platform")
 st.markdown("Professional Flower Phenotyping & Analysis")
 
+# Hardcoded API key
+api_key = "NjE4OHlmaXltZjNkdWc4Z2U1aWJ2OnBveURndUFzNlZiQ0k1V214b2ZOMkc2SVhoZTc0dEJ2"
+
 with st.sidebar:
     st.header("⚙️ Settings")
-    api_key = st.text_input("Landing AI API Key", type="password", value=os.environ.get("LANDINGAI_API_KEY", ""))
-    
-    if not api_key:
-        st.warning("⚠️ Please set your Landing AI API key")
-    else:
-        st.success("✅ API key configured")
+    st.success("✅ API key configured")
 
 uploaded_file = st.file_uploader("Upload flower image", type=['jpg', 'jpeg', 'png'])
 
@@ -110,6 +108,7 @@ if uploaded_file and api_key:
                     st.error("❌ No flowers detected")
             else:
                 st.error(f"❌ Error: {response.status_code}")
+                st.error(response.text)
             
             if os.path.exists(temp_path):
                 os.remove(temp_path)
