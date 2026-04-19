@@ -52,6 +52,7 @@ uploaded_file = st.file_uploader(
     type=["jpg", "jpeg", "png"]
 )
 
+
 def run_detection(image_path, prompt, api_key):
     url = "https://api.va.landing.ai/v1/tools/agentic-object-detection"
 
@@ -71,17 +72,9 @@ def run_detection(image_path, prompt, api_key):
 
     return []
 
+
 if uploaded_file and api_key:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("📸 Original Image")
-        image = Image.open(uploaded_file)
-        st.image(image, use_column_width=True)
-        st.caption(f"Size: {image.width} x {image.height} px")
-
-    if st.button("🔍 Analyze Ripeness", type="primary"):
-        temp_path = "temp_pepper.jpg"
-
-        try:
-            with open(temp_pat
+        st.subheader("📸 Original 
