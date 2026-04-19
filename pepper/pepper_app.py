@@ -13,9 +13,9 @@ api_key = os.environ.get("LANDINGAI_API_KEY")
 
 # Ripeness classes: prompt, box color, display label
 RIPENESS_CLASSES = [
-    {"prompt": "ripe red pepper fruit",    "color": "#FF2222", "label": "Ripe (Red)"},
-    {"prompt": "orange pepper fruit",       "color": "#FF8C00", "label": "Turning (Orange)"},
-    {"prompt": "unripe yellow pepper fruit","color": "#FFD700", "label": "Unripe (Yellow)"},
+    {"prompt": "red chili pepper",                 "color": "#FF2222", "label": "Ripe (Red)"},
+    {"prompt": "orange chili pepper turning red",  "color": "#FF8C00", "label": "Turning (Orange)"},
+    {"prompt": "yellow or green chili pepper",     "color": "#FFD700", "label": "Unripe (Yellow/Green)"},
 ]
 
 with st.sidebar:
@@ -35,6 +35,9 @@ with st.sidebar:
             f'{cls["label"]}',
             unsafe_allow_html=True
         )
+    st.divider()
+    conf_threshold = st.slider("Min confidence", 0.0, 1.0, 0.15, 0.05,
+        help="Lower = detect more peppers, Higher = fewer but more certain")
 
 uploaded_file = st.file_uploader(
     "Upload pepper field image", type=['jpg', 'jpeg', 'png']
@@ -84,10 +87,13 @@ if uploaded_file and api_key:
                     text=f"Detecting: {cls['label']}..."
                 )
                 preds = run_detection(temp_path, cls["prompt"], api_key)
+
+                # Apply confidence filter
+                preds = [p for p in preds if p.get("score", 1.0) >= conf_threshold]
+
                 all_results[cls["label"]] = preds
                 total_all += len(preds)
 
-                # Draw colored boxes for this ripeness class
                 color = cls["color"]
                 for pred in preds:
                     bbox = pred.get("bounding_box", [])
@@ -103,7 +109,6 @@ if uploaded_file and api_key:
                 st.subheader("🌶️ Ripeness Map")
                 st.image(annotated, use_column_width=True)
 
-            # Summary metrics
             st.divider()
             st.subheader("📊 Ripeness Summary")
 
@@ -115,20 +120,14 @@ if uploaded_file and api_key:
             for i, cls in enumerate(RIPENESS_CLASSES):
                 count = len(all_results[cls["label"]])
                 pct = (count / total_all * 100) if total_all > 0 else 0
-                cols[i+1].metric(
-                    cls["label"],
-                    count,
-                    f"{pct:.0f}% of total"
-                )
+                cols[i+1].metric(cls["label"], count, f"{pct:.0f}% of total")
                 report["ripeness_breakdown"][cls["label"]] = {
                     "count": count,
                     "percent_of_total": round(pct, 1)
                 }
 
-            # Ripeness index (0=all unripe, 100=all ripe)
             ripe_count   = len(all_results[RIPENESS_CLASSES[0]["label"]])
             orange_count = len(all_results[RIPENESS_CLASSES[1]["label"]])
-            yellow_count = len(all_results[RIPENESS_CLASSES[2]["label"]])
 
             if total_all > 0:
                 ripeness_index = ((ripe_count * 1.0) + (orange_count * 0.5)) / total_all * 100
@@ -140,7 +139,7 @@ if uploaded_file and api_key:
                                help="0 = all unripe, 100 = fully ripe")
                 harvest_ready = ripe_count / total_all * 100
                 ri_col2.metric("Harvest-Ready", f"{harvest_ready:.1f}%",
-                               help="% of peppers that are fully ripe")
+                               help="% of peppers fully ripe")
 
                 if harvest_ready >= 70:
                     st.success("✅ Ready to harvest! Over 70% of peppers are ripe.")
